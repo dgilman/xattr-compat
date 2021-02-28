@@ -245,7 +245,7 @@ def listxattr(
     attrs = []
     while data:
         attr_len = data[0]
-        attrs.append(os.fsdecode(data[1 : attr_len + 1]))
+        attrs.append(os.fsdecode(bytes(data[1 : attr_len + 1])))
         data = data[attr_len + 1 :]
     return attrs
 
