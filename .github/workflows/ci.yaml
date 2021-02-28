@@ -34,4 +34,6 @@ jobs:
         /sbin/mkfs.ext4 backing
         mkdir -p test_fs
         sudo mount -t ext4 -o loop,noatime,user_xattr backing test_fs
-        TMPDIR=`pwd`/test_fs python -m unittest
+        sudo mkdir -p test_fs/tmp
+        sudo chown 777 test_fs/tmp
+        TMPDIR=`pwd`/test_fs/tmp python -m unittest
