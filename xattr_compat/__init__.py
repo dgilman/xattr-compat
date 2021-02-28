@@ -1,8 +1,8 @@
 # Copyright 2021 David Gilman
 # Licensed under the MIT license. See LICENSE for details.
 
-import errno
 import collections.abc
+import errno
 import os
 import platform
 from typing import Iterator, List
