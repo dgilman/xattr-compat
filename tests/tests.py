@@ -83,7 +83,7 @@ class TestLibcXattr(unittest.TestCase):
 
 
 class TextXattrs(unittest.TestCase):
-    KEY = "test_key"
+    KEY = "user.test_key"
     VALUE = b"test_value"
     VALUE_WITH_NULLS = b"test\0value"
 
