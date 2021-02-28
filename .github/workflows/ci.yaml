@@ -33,5 +33,5 @@ jobs:
         fallocate -l50MiB backing
         /sbin/mkfs.ext4 backing
         mkdir -p test_fs
-        mount -t ext4 -o loop,noatime,user_xattr backing test_fs
+        sudo mount -t ext4 -o loop,noatime,user_xattr backing test_fs
         TMPDIR=`pwd`/test_fs python -m unittest
