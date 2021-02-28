@@ -91,10 +91,22 @@ class TestXattrSymlinks(unittest.TestCase):
         xattr_compat.setxattr(self.test_file.name, self.KEY, self.VALUE)
         xattr_compat.setxattr(self.test_dir.name, self.KEY, self.VALUE)
 
-        self.assertTrue(self.KEY in xattr_compat.listxattr(self.test_symlink_name, follow_symlinks=True))
-        self.assertTrue(self.KEY in xattr_compat.listxattr(self.test_dir_symlink_name, follow_symlinks=True))
-        self.assertFalse(self.KEY in xattr_compat.listxattr(self.test_symlink_name, follow_symlinks=False))
-        self.assertFalse(self.KEY in xattr_compat.listxattr(self.test_dir_symlink_name, follow_symlinks=False))
+        self.assertTrue(
+            self.KEY
+            in xattr_compat.listxattr(self.test_symlink_name, follow_symlinks=True)
+        )
+        self.assertTrue(
+            self.KEY
+            in xattr_compat.listxattr(self.test_dir_symlink_name, follow_symlinks=True)
+        )
+        self.assertFalse(
+            self.KEY
+            in xattr_compat.listxattr(self.test_symlink_name, follow_symlinks=False)
+        )
+        self.assertFalse(
+            self.KEY
+            in xattr_compat.listxattr(self.test_dir_symlink_name, follow_symlinks=False)
+        )
 
 
 class TextXattrs(unittest.TestCase):
