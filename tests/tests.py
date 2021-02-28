@@ -44,19 +44,6 @@ class TestLibcXattr(unittest.TestCase):
                 xattr_compat.removexattr(subtest, self.KEY)
                 self.assertTrue(self.KEY not in xattr_compat.listxattr(subtest))
 
-    @unittest.skipIf(PLAT != "Darwin", "tests NOFOLLOW behavior only on Darwin")
-    def test_nofollow_symlinks_fd(self):
-        # Darwin doesn't demand that NOFOLLOW and file descriptor mode are incompatible
-        xattr_compat.setxattr(
-            self.test_file.fileno(), self.KEY, self.VALUE, follow_symlinks=False
-        )
-        self.assertEqual(
-            xattr_compat.getxattr(
-                self.test_file.fileno(), self.KEY, follow_symlinks=False
-            ),
-            self.VALUE,
-        )
-
     def test_null_value(self):
         xattr_compat.setxattr(self.test_file.name, self.KEY, self.VALUE_WITH_NULLS)
         self.assertEqual(
@@ -79,6 +66,35 @@ class TestLibcXattr(unittest.TestCase):
         self.assertEqual(
             sorted(xattr_compat.listxattr(self.test_file.name)), sorted(attrs)
         )
+
+
+class TestXattrSymlinks(unittest.TestCase):
+    KEY = "user.test_key"
+    VALUE = b"test_value"
+
+    def setUp(self) -> None:
+        self.test_dir = tempfile.TemporaryDirectory(dir=TMPDIR)
+        self.test_dir_fd = os.open(self.test_dir.name, os.O_RDONLY)
+        self.test_file = tempfile.NamedTemporaryFile(dir=TMPDIR)
+        self.test_symlink_name = self.test_file.name + "-link"
+        os.symlink(self.test_file.name, self.test_symlink_name)
+        self.test_dir_symlink_name = os.path.join(self.test_dir.name, "dir_symlink")
+        os.symlink(self.test_dir.name, self.test_dir_symlink_name)
+
+    def tearDown(self) -> None:
+        os.remove(self.test_symlink_name)
+        self.test_file.close()
+        os.close(self.test_dir_fd)
+        self.test_dir.cleanup()
+
+    def test_nofollow_symlink(self):
+        xattr_compat.setxattr(self.test_file.name, self.KEY, self.VALUE)
+        xattr_compat.setxattr(self.test_dir.name, self.KEY, self.VALUE)
+
+        self.assertTrue(self.KEY in xattr_compat.listxattr(self.test_symlink_name, follow_symlinks=True))
+        self.assertTrue(self.KEY in xattr_compat.listxattr(self.test_dir_symlink_name, follow_symlinks=True))
+        self.assertFalse(self.KEY in xattr_compat.listxattr(self.test_symlink_name, follow_symlinks=False))
+        self.assertFalse(self.KEY in xattr_compat.listxattr(self.test_dir_symlink_name, follow_symlinks=False))
 
 
 class TextXattrs(unittest.TestCase):
@@ -126,4 +142,6 @@ class TextXattrs(unittest.TestCase):
         del self.xattrs[self.KEY]
 
 
+# XXX a test that validates the symlink/no symlink behavior\
+# XXX assert ENODATA / EEXISTS is raised for appropriate flags in set
 # XXX review other operating system's xattrs to see if impl is portable

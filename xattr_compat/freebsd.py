@@ -3,6 +3,7 @@
 
 import ctypes
 import ctypes.util
+import errno
 import os
 from typing import List, Optional
 
@@ -16,6 +17,8 @@ XATTR_SHOWCOMPRESSION = 0x0020
 XATTR_MAXNAMELEN = 127
 XATTR_FINDERINFO_NAME = "com.apple.FinderInfo"
 XATTR_RESOURCEFORK_NAME = "com.apple.ResourceFork"
+
+MISSING_KEY_ERRNO = errno.ENOATTR
 
 libc_path = ctypes.util.find_library("c")
 
@@ -92,7 +95,7 @@ def setxattr(
     follow_symlinks: bool = True,
 ):
     if not follow_symlinks:
-        flags = flags | XATTR_NOFOLLOW
+        flags = flags & XATTR_NOFOLLOW
 
     path, fn = _parse_path(path, c_setxattr, c_fsetxattr)
     attribute = attribute.encode("UTF-8")
@@ -133,7 +136,7 @@ def getxattr(
 ) -> bytes:
     flags = 0
     if not follow_symlinks:
-        flags = flags | XATTR_NOFOLLOW
+        flags = flags & XATTR_NOFOLLOW
 
     path, fn = _parse_path(path, c_getxattr, c_fgetxattr)
     attribute = attribute.encode("UTF-8")
@@ -167,7 +170,7 @@ def listxattr(
 
     flags = 0
     if not follow_symlinks:
-        flags = flags | XATTR_NOFOLLOW
+        flags = flags & XATTR_NOFOLLOW
 
     path, fn = _parse_path(path, c_listxattr, c_flistxattr)
 
@@ -198,7 +201,7 @@ c_fremovexattr.restype = ctypes.c_int
 def removexattr(path: os.PathLike, attribute: str, *, follow_symlinks: bool = True):
     flags = 0
     if not follow_symlinks:
-        flags = flags | XATTR_NOFOLLOW
+        flags = flags & XATTR_NOFOLLOW
 
     path, fn = _parse_path(path, c_removexattr, c_fremovexattr)
     attribute = attribute.encode("UTF-8")
