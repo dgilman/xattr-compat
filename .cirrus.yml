@@ -1,0 +1,5 @@
+freebsd_instance:
+  image_family: freebsd-12-1-snap
+
+test_task:
+  test_script: python3 -m unittest
