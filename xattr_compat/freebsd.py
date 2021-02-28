@@ -3,22 +3,13 @@
 
 import ctypes
 import ctypes.util
-import errno
 import os
 from typing import List, Optional
 
 # sys/xattr.h
-XATTR_NOFOLLOW = 0x0001
-XATTR_CREATE = 0x0002
-XATTR_REPLACE = 0x0004
-XATTR_NOSECURITY = 0x0008
-XATTR_NODEFAULT = 0x0010
-XATTR_SHOWCOMPRESSION = 0x0020
-XATTR_MAXNAMELEN = 127
-XATTR_FINDERINFO_NAME = "com.apple.FinderInfo"
-XATTR_RESOURCEFORK_NAME = "com.apple.ResourceFork"
+EXTATTR_NAMESPACE_USER = 0x00000001
+EXTATTR_NAMESPACE_SYSTEM = 0x00000002
 
-MISSING_KEY_ERRNO = errno.ENOATTR
 
 libc_path = ctypes.util.find_library("c")
 
@@ -28,14 +19,19 @@ if libc_path is None:
 libc = ctypes.CDLL(libc_path, use_errno=True)
 
 try:
-    c_getxattr = libc.getxattr
-    c_fgetxattr = libc.fgetxattr
-    c_listxattr = libc.listxattr
-    c_flistxattr = libc.flistxattr
-    c_removexattr = libc.removexattr
-    c_fremovexattr = libc.fremovexattr
-    c_setxattr = libc.setxattr
-    c_fsetxattr = libc.fsetxattr
+    c_extattr_get_fd = libc.extattr_get_fd
+    c_extattr_set_fd = libc.extattr_set_fd
+    c_extattr_delete_fd = libc.extattr_delete_fd
+    c_extattr_list_fd = libc.extattr_list_fd
+    c_extattr_get_file = libc.extattr_get_file
+    c_extattr_set_file = libc.extattr_set_file
+    c_extattr_delete_file = libc.extattr_delete_file
+    c_extattr_list_file = libc.extattr_list_file
+    c_extattr_get_link = libc.extattr_get_link
+    c_extattr_set_link = libc.extattr_set_link
+    c_extattr_delete_link = libc.extattr_delete_link
+    c_extattr_list_link = libc.extattr_list_link
+    c_foo = libc.asdfadfsfdas
 except AttributeError as exc:
     exc_msg = str(exc)
     if not exc_msg.endswith("symbol not found"):
@@ -57,33 +53,104 @@ def _oserror():
     raise OSError(errno, os.strerror(errno))
 
 
-def _parse_path(path, str_fn, fd_fn):
+def _parse_path(path, str_fn, fd_fn, link_fn, follow_symlinks=True):
     if isinstance(path, int):
         fn = fd_fn
     else:
         path = os.fsencode(path)
+        if follow_symlinks:
+            fn = str_fn
+        else:
+            fn = link_fn
         fn = str_fn
     return path, fn
 
 
-c_setxattr.argtypes = [
-    ctypes.c_char_p,
-    ctypes.c_char_p,
-    ctypes.c_void_p,
-    ctypes.c_size_t,
-    ctypes.c_uint32,
+c_extattr_get_fd.argtypes = [
     ctypes.c_int,
-]
-c_setxattr.restype = ctypes.c_int
-c_fsetxattr.argtypes = [
     ctypes.c_int,
     ctypes.c_char_p,
     ctypes.c_void_p,
     ctypes.c_size_t,
-    ctypes.c_uint32,
-    ctypes.c_int,
 ]
-c_fsetxattr.restype = ctypes.c_int
+c_extattr_get_fd.restype = ctypes.c_ssize_t
+c_extattr_get_file.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_int,
+    ctypes.c_char_p,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_get_file.restype = ctypes.c_ssize_t
+c_extattr_get_link.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_int,
+    ctypes.c_char_p,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_get_link.restype = ctypes.c_ssize_t
+
+
+c_extattr_set_fd.argtypes = [
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_char_p,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_set_fd.restype = ctypes.c_ssize_t
+c_extattr_set_file.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_int,
+    ctypes.c_char_p,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_set_file.restype = ctypes.c_ssize_t
+c_extattr_set_link.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_int,
+    ctypes.c_char_p,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_set_link.restype = ctypes.c_ssize_t
+
+c_extattr_delete_fd.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+c_extattr_delete_fd.restype = ctypes.c_int
+c_extattr_delete_file.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+c_extattr_delete_file.restype = ctypes.c_int
+c_extattr_delete_link.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+c_extattr_delete_link.restype = ctypes.c_int
+
+c_extattr_list_fd.argtypes = [
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_list_fd.restype = ctypes.c_ssize_t
+c_extattr_list_file.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_int,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_list_file.restype = ctypes.c_ssize_t
+c_extattr_list_link.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_int,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+]
+c_extattr_list_link.restype = ctypes.c_ssize_t
+
+#
+# XXX FreeBSD requires a namespace argument to the system call,
+#     and we can't reliably parse it from the filename. For now,
+#     shove the USER one in there so we can validate the impl.
+#
 
 
 def setxattr(
@@ -94,16 +161,19 @@ def setxattr(
     *,
     follow_symlinks: bool = True,
 ):
-    if not follow_symlinks:
-        flags = flags & XATTR_NOFOLLOW
-
-    path, fn = _parse_path(path, c_setxattr, c_fsetxattr)
-    attribute = attribute.encode("UTF-8")
+    path, fn = _parse_path(
+        path,
+        c_extattr_set_file,
+        c_extattr_set_fd,
+        c_extattr_set_link,
+        follow_symlinks=follow_symlinks,
+    )
+    attribute = os.fsencode(attribute)
     size = len(value)
     buf = ctypes.create_string_buffer(value)
     buf_ptr = ctypes.cast(ctypes.pointer(buf), ctypes.c_void_p)
 
-    retval = fn(path, attribute, buf_ptr, size, 0, flags)
+    retval = fn(path, EXTATTR_NAMESPACE_USER, attribute, buf_ptr, size)
 
     if retval == 0:
         return
@@ -111,55 +181,32 @@ def setxattr(
     _oserror()
 
 
-c_getxattr.argtypes = [
-    ctypes.c_char_p,
-    ctypes.c_char_p,
-    ctypes.c_void_p,
-    ctypes.c_size_t,
-    ctypes.c_uint32,
-    ctypes.c_int,
-]
-c_getxattr.restype = ctypes.c_ssize_t
-c_fgetxattr.argtypes = [
-    ctypes.c_int,
-    ctypes.c_char_p,
-    ctypes.c_void_p,
-    ctypes.c_size_t,
-    ctypes.c_uint32,
-    ctypes.c_int,
-]
-c_fgetxattr.restype = ctypes.c_ssize_t
-
-
 def getxattr(
     path: os.PathLike, attribute: str, *, follow_symlinks: bool = True
 ) -> bytes:
-    flags = 0
-    if not follow_symlinks:
-        flags = flags & XATTR_NOFOLLOW
 
-    path, fn = _parse_path(path, c_getxattr, c_fgetxattr)
-    attribute = attribute.encode("UTF-8")
+    path, fn = _parse_path(
+        path,
+        c_extattr_get_file,
+        c_extattr_get_fd,
+        c_extattr_get_link,
+        follow_symlinks=follow_symlinks,
+    )
+    attribute = os.fsencode(attribute)
 
-    attr_size = fn(path, attribute, None, 0, 0, flags)
+    attr_size = fn(path, EXTATTR_NAMESPACE_USER, attribute, None, 0)
 
     if attr_size < 0:
         _oserror()
 
     buf = ctypes.create_string_buffer(attr_size)
     buf_ptr = ctypes.cast(ctypes.pointer(buf), ctypes.c_void_p)
-    retval = fn(path, attribute, buf_ptr, attr_size, 0, flags)
+    retval = fn(path, EXTATTR_NAMESPACE_USER, attribute, buf_ptr, attr_size)
 
     if retval != attr_size:
         _oserror()
 
     return buf.raw
-
-
-c_listxattr.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int]
-c_listxattr.restype = ctypes.c_ssize_t
-c_flistxattr.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int]
-c_flistxattr.restype = ctypes.c_ssize_t
 
 
 def listxattr(
@@ -168,13 +215,15 @@ def listxattr(
     if path is None:
         path = "."
 
-    flags = 0
-    if not follow_symlinks:
-        flags = flags & XATTR_NOFOLLOW
+    path, fn = _parse_path(
+        path,
+        c_extattr_list_file,
+        c_extattr_list_fd,
+        c_extattr_list_link,
+        follow_symlinks=follow_symlinks,
+    )
 
-    path, fn = _parse_path(path, c_listxattr, c_flistxattr)
-
-    buf_size = fn(path, None, 0, flags)
+    buf_size = fn(path, EXTATTR_NAMESPACE_USER, None, 0)
 
     if buf_size < 0:
         _oserror()
@@ -184,29 +233,31 @@ def listxattr(
 
     buf = ctypes.create_string_buffer(buf_size)
     buf_ptr = ctypes.cast(ctypes.pointer(buf), ctypes.c_char_p)
-    retval = fn(path, buf_ptr, buf_size, flags)
+    retval = fn(path, EXTATTR_NAMESPACE_USER, buf_ptr, buf_size)
 
     if retval != buf_size:
         _oserror()
 
-    return [attr.decode("UTF-8") for attr in buf.raw.split(b"\0")][:-1]
-
-
-c_removexattr.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
-c_removexattr.restype = ctypes.c_int
-c_fremovexattr.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
-c_fremovexattr.restype = ctypes.c_int
+    data = memoryview(buf.raw)
+    attrs = []
+    while data:
+        attr_len = data[0]
+        attrs.append(os.fsdecode(data[1 : attr_len + 1]))
+        data = data[attr_len + 1 :]
+    return attrs
 
 
 def removexattr(path: os.PathLike, attribute: str, *, follow_symlinks: bool = True):
-    flags = 0
-    if not follow_symlinks:
-        flags = flags & XATTR_NOFOLLOW
+    path, fn = _parse_path(
+        path,
+        c_extattr_delete_file,
+        c_extattr_delete_fd,
+        c_extattr_delete_link,
+        follow_symlinks=follow_symlinks,
+    )
+    attribute = os.fsencode(attribute)
 
-    path, fn = _parse_path(path, c_removexattr, c_fremovexattr)
-    attribute = attribute.encode("UTF-8")
-
-    retval = fn(path, attribute, flags)
+    retval = fn(path, EXTATTR_NAMESPACE_USER, attribute)
 
     if retval == 0:
         return

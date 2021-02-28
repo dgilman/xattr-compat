@@ -41,6 +41,10 @@ elif _sys == "Linux":
     MISSING_KEY_ERRNO = errno.ENODATA
 
     __all__ += ["XATTR_SIZE_MAX", "XATTR_CREATE", "XATTR_REPLACE"]
+elif _sys in ("FreeBSD", "NetBSD"):
+    from .freebsd import *
+
+    MISSING_KEY_ERRNO = errno.ENOATTR
 else:
     raise Exception(f"Unknown platform {_sys}")
 
