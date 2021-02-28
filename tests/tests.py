@@ -19,20 +19,21 @@ class TestLibcXattr(unittest.TestCase):
     VALUE_WITH_NULLS = b"test\0value"
 
     def setUp(self) -> None:
+        self.test_dir = tempfile.TemporaryDirectory(dir=TMPDIR)
+        self.test_dir_fd = os.open(self.test_dir.name, os.O_RDONLY)
         self.test_file = tempfile.NamedTemporaryFile(dir=TMPDIR)
 
     def tearDown(self) -> None:
         self.test_file.close()
+        os.close(self.test_dir_fd)
+        self.test_dir.cleanup()
 
     def test_smoke(self):
-        test_dir = os.path.dirname(self.test_file.name)
-        test_dir_fd = os.open(test_dir, os.O_RDONLY)
-
         smoke_tests = [
             ("file by name", self.test_file.name),
             ("file by fd", self.test_file.fileno()),
-            ("dir by name", test_dir),
-            ("dir by fd", test_dir_fd),
+            ("dir by name", self.test_dir.name),
+            ("dir by fd", self.test_dir_fd),
         ]
 
         for subtest_desc, subtest in smoke_tests:
@@ -42,8 +43,6 @@ class TestLibcXattr(unittest.TestCase):
                 self.assertTrue(self.KEY in xattr_compat.listxattr(subtest))
                 xattr_compat.removexattr(subtest, self.KEY)
                 self.assertTrue(self.KEY not in xattr_compat.listxattr(subtest))
-
-        os.close(test_dir_fd)
 
     @unittest.skipIf(PLAT != "Darwin", "tests NOFOLLOW behavior only on Darwin")
     def test_nofollow_symlinks_fd(self):
