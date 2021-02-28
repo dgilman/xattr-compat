@@ -30,10 +30,4 @@ jobs:
     - name: Linux testing
       if: ${{ matrix.platform == 'ubuntu-latest' }}
       run: |
-        fallocate -l50MiB backing
-        /sbin/mkfs.ext4 backing
-        mkdir -p test_fs
-        sudo mount -t ext4 -o loop,noatime,user_xattr backing test_fs
-        sudo mkdir -p test_fs/tmp
-        sudo chmod 777 test_fs/tmp
-        TMPDIR=`pwd`/test_fs/tmp python -m unittest
+        python -m unittest
