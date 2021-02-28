@@ -174,10 +174,14 @@ def setxattr(
 
     retval = fn(path, EXTATTR_NAMESPACE_USER, attribute, buf_ptr, size)
 
-    if retval == 0:
+    if retval == size:
         return
 
-    _oserror()
+    if retval < 0:
+        _oserror()
+
+    # XXX how should this error case be handled?
+    raise Exception("Incomplete write")
 
 
 def getxattr(
