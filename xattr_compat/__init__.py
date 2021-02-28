@@ -45,6 +45,8 @@ elif _sys in ("FreeBSD", "NetBSD"):
     from .freebsd import *
 
     MISSING_KEY_ERRNO = errno.ENOATTR
+
+    __all__ += ["EXTATTR_NAMESPACE_USER", "EXTATTR_NAMESPACE_SYSTEM"]
 else:
     raise Exception(f"Unknown platform {_sys}")
 
