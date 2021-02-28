@@ -31,16 +31,15 @@ try:
     c_extattr_set_link = libc.extattr_set_link
     c_extattr_delete_link = libc.extattr_delete_link
     c_extattr_list_link = libc.extattr_list_link
-    c_foo = libc.asdfadfsfdas
 except AttributeError as exc:
     exc_msg = str(exc)
-    if not exc_msg.endswith("symbol not found"):
+    if not exc_msg.startswith("Undefined symbol"):
         raise
 
-    # dlsym(0x111dde8b0, asdfasfd): symbol not found
+    # Undefined symbol "asdfadfsfdas"
     import re
 
-    match = re.search(r"[(].*, (.*)[)]", exc_msg)
+    match = re.search(r'"(.*)"', exc_msg)
     if not match:
         raise
 
