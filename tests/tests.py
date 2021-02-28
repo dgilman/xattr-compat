@@ -72,7 +72,7 @@ class TestLibcXattr(unittest.TestCase):
         self.assertEqual(xattr_compat.listxattr(self.test_file.name), [])
 
     def test_list_many_attr(self):
-        attrs = ["foo", "bar", "baz"]
+        attrs = ["user.foo", "user.bar", "user.baz"]
         for attr in attrs:
             xattr_compat.setxattr(self.test_file.name, attr, b"")
         # Darwin doesn't guarantee the order of attr names and appears to use a stack
@@ -110,7 +110,7 @@ class TextXattrs(unittest.TestCase):
 
     def test_getitem(self):
         self.assertRaises(TypeError, lambda: self.xattrs[42])
-        self.assertRaises(KeyError, lambda: self.xattrs["swag"])
+        self.assertRaises(KeyError, lambda: self.xattrs["user.swag"])
 
         self.xattrs[self.KEY] = self.VALUE
         self.assertEqual(self.xattrs[self.KEY], self.VALUE)
@@ -122,7 +122,7 @@ class TextXattrs(unittest.TestCase):
             del self.xattrs[42]
 
         with self.assertRaises(KeyError):
-            del self.xattrs["Afdsafdfad"]
+            del self.xattrs["user.Afdsafdfad"]
 
         del self.xattrs[self.KEY]
 
