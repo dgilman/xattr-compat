@@ -61,7 +61,6 @@ def _parse_path(path, str_fn, fd_fn, link_fn, follow_symlinks=True):
             fn = str_fn
         else:
             fn = link_fn
-        fn = str_fn
     return path, fn
 
 
