@@ -1,6 +1,7 @@
 # Copyright 2021 David Gilman
 # Licensed under the MIT license. See LICENSE for details.
 
+import os
 import os.path
 import platform
 import tempfile
@@ -9,6 +10,7 @@ import unittest
 import xattr_compat
 
 PLAT = platform.system()
+TMPDIR = os.environ.get("TMPDIR")
 
 
 class TestLibcXattr(unittest.TestCase):
@@ -17,7 +19,7 @@ class TestLibcXattr(unittest.TestCase):
     VALUE_WITH_NULLS = b"test\0value"
 
     def setUp(self) -> None:
-        self.test_file = tempfile.NamedTemporaryFile()
+        self.test_file = tempfile.NamedTemporaryFile(dir=TMPDIR)
 
     def tearDown(self) -> None:
         self.test_file.close()
@@ -86,7 +88,7 @@ class TextXattrs(unittest.TestCase):
     VALUE_WITH_NULLS = b"test\0value"
 
     def setUp(self) -> None:
-        self.test_file = tempfile.NamedTemporaryFile()
+        self.test_file = tempfile.NamedTemporaryFile(dir=TMPDIR)
         self.xattrs = xattr_compat.Xattrs(self.test_file.name)
 
     def tearDown(self) -> None:
