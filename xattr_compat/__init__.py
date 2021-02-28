@@ -1,6 +1,7 @@
 # Copyright 2021 David Gilman
 # Licensed under the MIT license. See LICENSE for details.
 
+import errno
 import collections.abc
 import os
 import platform
@@ -11,6 +12,8 @@ __all__ = ["Xattrs", "setxattr", "getxattr", "listxattr", "removexattr"]
 
 if _sys == "Darwin":
     from .darwin import *
+
+    MISSING_KEY_ERRNO = errno.ENOATTR
 
     __all__ += [
         "XATTR_NOFOLLOW",
@@ -34,6 +37,8 @@ elif _sys == "Linux":
         removexattr,
         setxattr,
     )
+
+    MISSING_KEY_ERRNO = errno.ENODATA
 
     __all__ += ["XATTR_SIZE_MAX", "XATTR_CREATE", "XATTR_REPLACE"]
 else:
