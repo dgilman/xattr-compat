@@ -17,7 +17,7 @@ import xattr_compat
 
 xattrs = xattr_compat.Xattrs("./my_file")
 
-xattrs["org.humanfund.xattr"] = b"hello\0world"
+xattrs["user.humanfund.xattr"] = b"hello\0world"
 
 print("Extended attributes:", xattrs.items())
 ```
