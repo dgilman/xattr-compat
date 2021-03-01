@@ -13,6 +13,7 @@ __all__ = ["Xattrs", "setxattr", "getxattr", "listxattr", "removexattr"]
 if _sys == "Darwin":
     from .darwin import *
 
+    KEY_TYPES = str
     MISSING_KEY_ERRNO = errno.ENOATTR
 
     __all__ += [
@@ -38,12 +39,14 @@ elif _sys == "Linux":
         setxattr,
     )
 
+    KEY_TYPES = str
     MISSING_KEY_ERRNO = errno.ENODATA
 
     __all__ += ["XATTR_SIZE_MAX", "XATTR_CREATE", "XATTR_REPLACE"]
 elif _sys in ("FreeBSD", "NetBSD"):
     from .freebsd import *
 
+    KEY_TYPES = (str, tuple)
     MISSING_KEY_ERRNO = errno.ENOATTR
 
     __all__ += ["EXTATTR_NAMESPACE_USER", "EXTATTR_NAMESPACE_SYSTEM"]
@@ -66,7 +69,7 @@ class Xattrs(collections.abc.MutableMapping):
         return len(self.keys())
 
     def __getitem__(self, k: str) -> bytes:
-        if not isinstance(k, str):
+        if not isinstance(k, KEY_TYPES):
             raise TypeError(f"Xattr keys must be str, not {type(k).__name__}")
 
         try:
@@ -77,7 +80,7 @@ class Xattrs(collections.abc.MutableMapping):
             raise
 
     def __setitem__(self, k: str, v: bytes) -> None:
-        if not isinstance(k, str):
+        if not isinstance(k, KEY_TYPES):
             raise TypeError(f"Xattr keys must be str, not {type(k).__name__}")
         if not isinstance(v, bytes):
             raise TypeError(f"Xattr values must be bytes, not {type(k).__name__}")
@@ -85,7 +88,7 @@ class Xattrs(collections.abc.MutableMapping):
         return setxattr(self.path, k, v, follow_symlinks=self.follow_symlinks)
 
     def __delitem__(self, k: str) -> None:
-        if not isinstance(k, str):
+        if not isinstance(k, KEY_TYPES):
             raise TypeError(f"Xattr keys must be str, not {type(k).__name__}")
 
         try:

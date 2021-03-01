@@ -4,11 +4,13 @@
 import ctypes
 import ctypes.util
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union
 
 # sys/xattr.h
 EXTATTR_NAMESPACE_USER = 0x00000001
 EXTATTR_NAMESPACE_SYSTEM = 0x00000002
+
+PATH_LIKE = Union[os.PathLike, int, Tuple[int, str]]
 
 
 libc_path = ctypes.util.find_library("c")
@@ -53,6 +55,15 @@ def _oserror():
 
 
 def _parse_path(path, str_fn, fd_fn, link_fn, follow_symlinks=True):
+    if isinstance(path, tuple):
+        if len(path) != 2:
+            raise ValueError("Invalid path tuple")
+        namespace, path = path
+        if namespace not in (EXTATTR_NAMESPACE_SYSTEM, EXTATTR_NAMESPACE_USER):
+            raise ValueError("Invalid extattr namespace")
+    else:
+        namespace = EXTATTR_NAMESPACE_USER
+
     if isinstance(path, int):
         fn = fd_fn
     else:
@@ -61,7 +72,7 @@ def _parse_path(path, str_fn, fd_fn, link_fn, follow_symlinks=True):
             fn = str_fn
         else:
             fn = link_fn
-    return path, fn
+    return namespace, path, fn
 
 
 c_extattr_get_fd.argtypes = [
@@ -144,22 +155,16 @@ c_extattr_list_link.argtypes = [
 ]
 c_extattr_list_link.restype = ctypes.c_ssize_t
 
-#
-# XXX FreeBSD requires a namespace argument to the system call,
-#     and we can't reliably parse it from the filename. For now,
-#     shove the USER one in there so we can validate the impl.
-#
-
 
 def setxattr(
-    path: os.PathLike,
+    path: PATH_LIKE,
     attribute: str,
     value: bytes,
     flags: int = 0,
     *,
     follow_symlinks: bool = True,
 ):
-    path, fn = _parse_path(
+    namespace, path, fn = _parse_path(
         path,
         c_extattr_set_file,
         c_extattr_set_fd,
@@ -171,7 +176,7 @@ def setxattr(
     buf = ctypes.create_string_buffer(value)
     buf_ptr = ctypes.cast(ctypes.pointer(buf), ctypes.c_void_p)
 
-    retval = fn(path, EXTATTR_NAMESPACE_USER, attribute, buf_ptr, size)
+    retval = fn(path, namespace, attribute, buf_ptr, size)
 
     if retval == size:
         return
@@ -183,11 +188,9 @@ def setxattr(
     raise Exception("Incomplete write")
 
 
-def getxattr(
-    path: os.PathLike, attribute: str, *, follow_symlinks: bool = True
-) -> bytes:
+def getxattr(path: PATH_LIKE, attribute: str, *, follow_symlinks: bool = True) -> bytes:
 
-    path, fn = _parse_path(
+    namespace, path, fn = _parse_path(
         path,
         c_extattr_get_file,
         c_extattr_get_fd,
@@ -196,14 +199,14 @@ def getxattr(
     )
     attribute = os.fsencode(attribute)
 
-    attr_size = fn(path, EXTATTR_NAMESPACE_USER, attribute, None, 0)
+    attr_size = fn(path, namespace, attribute, None, 0)
 
     if attr_size < 0:
         _oserror()
 
     buf = ctypes.create_string_buffer(attr_size)
     buf_ptr = ctypes.cast(ctypes.pointer(buf), ctypes.c_void_p)
-    retval = fn(path, EXTATTR_NAMESPACE_USER, attribute, buf_ptr, attr_size)
+    retval = fn(path, namespace, attribute, buf_ptr, attr_size)
 
     if retval != attr_size:
         _oserror()
@@ -211,13 +214,11 @@ def getxattr(
     return buf.raw
 
 
-def listxattr(
-    path: Optional[os.PathLike], *, follow_symlinks: bool = True
-) -> List[str]:
+def listxattr(path: Optional[PATH_LIKE], *, follow_symlinks: bool = True) -> List[str]:
     if path is None:
         path = "."
 
-    path, fn = _parse_path(
+    namespace, path, fn = _parse_path(
         path,
         c_extattr_list_file,
         c_extattr_list_fd,
@@ -225,7 +226,7 @@ def listxattr(
         follow_symlinks=follow_symlinks,
     )
 
-    buf_size = fn(path, EXTATTR_NAMESPACE_USER, None, 0)
+    buf_size = fn(path, namespace, None, 0)
 
     if buf_size < 0:
         _oserror()
@@ -235,7 +236,7 @@ def listxattr(
 
     buf = ctypes.create_string_buffer(buf_size)
     buf_ptr = ctypes.cast(ctypes.pointer(buf), ctypes.c_char_p)
-    retval = fn(path, EXTATTR_NAMESPACE_USER, buf_ptr, buf_size)
+    retval = fn(path, namespace, buf_ptr, buf_size)
 
     if retval != buf_size:
         _oserror()
@@ -249,8 +250,8 @@ def listxattr(
     return attrs
 
 
-def removexattr(path: os.PathLike, attribute: str, *, follow_symlinks: bool = True):
-    path, fn = _parse_path(
+def removexattr(path: PATH_LIKE, attribute: str, *, follow_symlinks: bool = True):
+    namespace, path, fn = _parse_path(
         path,
         c_extattr_delete_file,
         c_extattr_delete_fd,
@@ -259,7 +260,7 @@ def removexattr(path: os.PathLike, attribute: str, *, follow_symlinks: bool = Tr
     )
     attribute = os.fsencode(attribute)
 
-    retval = fn(path, EXTATTR_NAMESPACE_USER, attribute)
+    retval = fn(path, namespace, attribute)
 
     if retval == 0:
         return

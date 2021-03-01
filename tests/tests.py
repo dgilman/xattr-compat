@@ -67,6 +67,20 @@ class TestLibcXattr(unittest.TestCase):
             sorted(xattr_compat.listxattr(self.test_file.name)), sorted(attrs)
         )
 
+    @unittest.skipIf(PLAT != "FreeBSD", "Namespace tuple only used on FreeBSD")
+    def test_freebsd_namespaces(self):
+        xattr_compat.setxattr(
+            (xattr_compat.EXTATTR_NAMESPACE_USER, self.test_file.name),
+            self.KEY,
+            self.VALUE,
+        )
+        self.assertTrue(
+            self.KEY
+            not in xattr_compat.listxattr(
+                (xattr_compat.EXTATTR_NAMESPACE_SYSTEM, self.test_file.name)
+            )
+        )
+
 
 class TestXattrSymlinks(unittest.TestCase):
     KEY = "user.test_key"
@@ -152,8 +166,3 @@ class TextXattrs(unittest.TestCase):
             del self.xattrs["user.Afdsafdfad"]
 
         del self.xattrs[self.KEY]
-
-
-# XXX a test that validates the symlink/no symlink behavior\
-# XXX assert ENODATA / EEXISTS is raised for appropriate flags in set
-# XXX review other operating system's xattrs to see if impl is portable
