@@ -1,6 +1,6 @@
 # xattr-compat
 
-Support for extended attributes on multiple platforms. Also includes a mutable mapping class for easy access to file xattrs.
+Provides a standard API to access file extended attributes on Linux, MacOS X, FreeBSD and NetBSD. Also includes a mutable mapping class for easy access to file xattrs.
 
 No C modules have to be compiled to use this library and it has no dependencies. The ctypes module in the standard library is used to make the required libc calls. Performance should be fine for all purposes. I mean, it's just xattrs, who is making so many xattr calls from Python that they need something above and beyond this?
 
