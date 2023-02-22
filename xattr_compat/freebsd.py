@@ -189,7 +189,6 @@ def setxattr(
 
 
 def getxattr(path: PATH_LIKE, attribute: str, *, follow_symlinks: bool = True) -> bytes:
-
     namespace, path, fn = _parse_path(
         path,
         c_extattr_get_file,
